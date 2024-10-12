@@ -1,8 +1,12 @@
 from CustomLibs import InputValidation as IV
 from CustomLibs import artifact_search as AS
 from CustomLibs import registry_parsing as RP
+from CustomLibs import recent_items_parsing as RI
 import psutil
 import os
+
+# global variables
+recent_items_user_list = []
 
 # list connected devices
 def list_drives():
@@ -22,9 +26,16 @@ def artifact_search_device(drive):
     # initialize artifact list
     artifact_list = []
 
+    global recent_items_user_list
+    recent_items_user_list = AS.search_recent_items(drive)
+
     # search for registry
     if AS.search_live_registry(drive):
         artifact_list.append("Registry")
+
+    # check recent items
+    if len(recent_items_user_list) != 0:
+        artifact_list.append("Recent Items (LNK Files)")
 
     artifact_list.append("Go Back")
 
@@ -42,6 +53,8 @@ def artifact_selection(artifact_list, drive):
 
     if selected_artifact == "Registry":
         RP.parse_registry(drive)
+    elif selected_artifact == "Recent Items (LNK Files)":
+        RI.parse_recent(recent_items_user_list, drive)
     elif selected_artifact == "Go Back":
         global artifact_menu
         artifact_menu = False
