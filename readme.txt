@@ -14,6 +14,7 @@ Current Artifacts This Will Parse:
 	- Amcache.hve
 
 - LNK Files
+- Prefetch
 	
 
 More features coming soon.
