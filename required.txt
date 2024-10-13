@@ -1,2 +1,3 @@
 pip install python-registry
 pip install psutil
+pip install windowsprefetch

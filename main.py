@@ -2,6 +2,7 @@ from CustomLibs import InputValidation as IV
 from CustomLibs import artifact_search as AS
 from CustomLibs import registry_parsing as RP
 from CustomLibs import recent_items_parsing as RI
+from CustomLibs import prefetch_parsing
 import psutil
 import os
 
@@ -26,6 +27,7 @@ def artifact_search_device(drive):
     # initialize artifact list
     artifact_list = []
 
+    # search recent items
     global recent_items_user_list
     recent_items_user_list = AS.search_recent_items(drive)
 
@@ -33,11 +35,15 @@ def artifact_search_device(drive):
     if AS.search_live_registry(drive):
         artifact_list.append("Registry")
 
-    # check recent items
+    # check recent items list
+    if "No***Users***Found" in recent_items_user_list:
+        recent_items_user_list = []
     if len(recent_items_user_list) != 0:
         artifact_list.append("Recent Items (LNK Files)")
 
-    artifact_list.append("Go Back")
+    # search for prefetch files
+    if AS.search_prefetch(drive):
+        artifact_list.append("Prefetch")
 
     # output found artifacts
     print("\nArtifacts Found:\n----------------")
@@ -48,16 +54,26 @@ def artifact_search_device(drive):
 
 # artifact selection function
 def artifact_selection(artifact_list, drive):
-    selection = IV.int_between_numbers("Select an artifact: ", 1, len(artifact_list))  # prompt selection
+    selection = IV.int_between_numbers("Select an artifact: ", 0, len(artifact_list))  # prompt selection
     selected_artifact = artifact_list[selection - 1]  # set selected artifact
+
+    if selection == 0:
+        global artifact_menu
+        artifact_menu = False
+        return
 
     if selected_artifact == "Registry":
         RP.parse_registry(drive)
     elif selected_artifact == "Recent Items (LNK Files)":
-        RI.parse_recent(recent_items_user_list, drive)
-    elif selected_artifact == "Go Back":
-        global artifact_menu
-        artifact_menu = False
+        if drive == "C:\\":
+            RI.parse_recent(recent_items_user_list, drive)
+        else:
+            RI.parse_recent_external(recent_items_user_list, drive)
+    elif selected_artifact == "Prefetch":
+        if drive == "C:\\":
+            prefetch_parsing.parse_prefetch(drive)
+        else:
+            prefetch_parsing.parse_prefetch_external(drive)
 
 
 artifact_menu = True
@@ -78,6 +94,7 @@ def main():
 
         while artifact_menu:
             artifact_list = artifact_search_device(drive_selected)  # display found artifacts and set in list
+            print("O: Go Back")  # print go back option
             artifact_selection(artifact_list, drive_selected)  # prompt artifact selection
 
     return 0

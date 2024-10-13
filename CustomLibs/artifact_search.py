@@ -1,7 +1,7 @@
 import os
 
 def set_path(artifact_path, drive):
-    if "root" in os.listdir(drive):
+    if "[root]" in os.listdir(drive):
         path = drive + f"[root]\\{artifact_path}"
     else:
         path = drive + artifact_path
@@ -27,18 +27,29 @@ def search_recent_items(drive):
     user_list_output = []  # initialize output user list
     exclusion_list = ["All Users", "Default", "Default User", "Public"]
     user_path = set_path("Users", drive)
+    files_found = False
 
-    # add users to user list
-    for user in os.listdir(user_path):
-        if os.path.isdir(os.path.join(user_path, user)) and user not in exclusion_list:
-            user_list.append(user)
+    if os.path.exists(user_path):
+        # add users to user list
+        for user in os.listdir(user_path):
+            if os.path.isdir(os.path.join(user_path, user)) and user not in exclusion_list:
+                user_list.append(user)
 
-    # check user paths for files in Recent folder
-    for user in user_list:
-        try:
-            user_path = set_path(f"Users\\{user}\\AppData\\Roaming\\Microsoft\\Windows\\Recent", drive)
-            if bool(os.listdir(user_path)):
-                user_list_output.append(user)
-        except Exception:
-            pass
-    return user_list_output
+        # check user paths for files in Recent folder
+        for user in user_list:
+            try:
+                user_path = set_path(f"Users\\{user}\\AppData\\Roaming\\Microsoft\\Windows\\Recent", drive)
+                if bool(os.listdir(user_path)):
+                    user_list_output.append(user)
+            except Exception:
+                pass
+
+        return user_list_output
+
+    else:
+        return "No***Users***Found"
+
+# search for prefetch files
+def search_prefetch(drive):
+    prefetch_path = set_path("Windows\\Prefetch", drive)  # set path to prefetch files
+    return os.path.exists(prefetch_path) and bool(os.listdir(prefetch_path))  # check if path and files exist
