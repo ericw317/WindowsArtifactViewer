@@ -13,8 +13,12 @@ Current Artifacts This Will Parse:
 	- NTUSER.DAT
 	- Amcache.hve
 
+- Internet Artifacts:
+	- History
+
 - LNK Files
 - Prefetch
+
 	
 
 More features coming soon.
