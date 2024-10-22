@@ -56,6 +56,20 @@ def initialize_artifact_paths(drive, artifact, firefox=False, username=""):
                     return full_firefox_path
         return None
 
+# set spacing
+def set_spacing(artifact_data, display_selection, index, extra=False):
+    longest_element = 0
+    if not extra:
+        for element in artifact_data[:display_selection]:
+            if len(str(element[index])) > longest_element:
+                longest_element = len(str(element[index]))
+    else:
+        for element in artifact_data[:display_selection]:
+            if len(str(os.path.basename(element[index]))) > longest_element:
+                longest_element = len(str(os.path.basename(element[index])))
+
+    return longest_element
+
 ##### SEARCH FUNCTIONS #####
 
 # search internet SQLite files
@@ -159,54 +173,46 @@ def collect_downloads(downloads_path, firefox=False):
 
 # display history data
 def display_history(artifact_data, display_selection, history_path):
-    # get URL lengths for formatting
-    longest_URL = 0
-    for URL, _, _, _ in artifact_data[:display_selection]:
-        if len(URL) > longest_URL:
-            longest_URL = len(URL)
-
-    # set spacing size
-    if longest_URL > 30:
-        spacing = longest_URL
-    else:
-        spacing = 30
+    URL_spacing = set_spacing(artifact_data, display_selection, 0)
+    title_spacing = set_spacing(artifact_data, display_selection, 1)
+    visit_count_spacing = 11
+    last_visit_spacing = 25
+    horizontal_spacing = URL_spacing + title_spacing + (last_visit_spacing * 2)
 
     # display history entries
-    print(f"{'URL':<{spacing}} | {'Title':<{spacing}} | {'Visit Count':<{spacing}} | {'Last Visit':<{spacing}}")
-    print("-" * (spacing * 4))
+    print(f"{'Title':<{title_spacing}} | {'Last Visit':<{last_visit_spacing}} | {'Visit Count':<{visit_count_spacing}} | {'URL':<{URL_spacing}}")
+    print("-" * horizontal_spacing)
     for entry in artifact_data[:display_selection]:
+        title = entry[1]
+        visit_count = entry[2]
+        URL = entry[0]
         try:
             if "Firefox" not in history_path:
-                print(f"{entry[0]:<{spacing}} | {entry[1]:<{spacing}} | {entry[2]:<{spacing}} | "
-                      f"{time_conversion.convert_windows_epoch(entry[3])}")
+                last_visit_time = str(time_conversion.convert_windows_epoch(entry[3]))
+                print(f"{title:<{title_spacing}} | {last_visit_time:<{last_visit_spacing}} | {visit_count:<{visit_count_spacing}}"
+                      f" | {URL:<{URL_spacing}}")
             else:
-                print(f"{entry[0]:<{spacing}} | {entry[1]:<{spacing}} | {entry[2]:<{spacing}} | "
-                      f"{time_conversion.convert_unix_epoch_microseconds(entry[3])}")
+                last_visit_time = str(time_conversion.convert_unix_epoch_microseconds(entry[3]))
+                print(
+                    f"{title:<{title_spacing}} | {last_visit_time:<{last_visit_spacing}} | {visit_count:<{visit_count_spacing}}"
+                    f" | {URL:<{URL_spacing}}")
         except Exception as e:
             continue
 
 # display downloads
 def display_downloads(artifact_data, display_selection, downloads_path):
-    # get target_path length for formatting
-    longest_path = 0
+    file_name_space = set_spacing(artifact_data, display_selection, 0, extra=True)
+    download_path_space = set_spacing(artifact_data, display_selection, 0)
+    download_time_space = 25
     if "Firefox" not in downloads_path:
-        for target_path, _, _ in artifact_data[:display_selection]:
-            if len(target_path) > longest_path:
-                longest_path = len(target_path)
+        download_url_space = set_spacing(artifact_data, display_selection, 2)
+        horizontal_space = file_name_space + download_path_space + download_time_space + download_url_space
     else:
-        for content_path, _ in artifact_data[:display_selection]:
-            if len(content_path) > longest_path:
-                longest_path = len(content_path)
-
-    # set spacing size
-    if longest_path > 30:
-        spacing = longest_path
-    else:
-        spacing = 30
+        horizontal_space = file_name_space + download_path_space + download_time_space
 
     # display downloads
-    print(f"{'File Name':<{spacing}} | {'Download Path':<{spacing}} | {'Download Time':<{spacing}} | {'Download URL'}")
-    print("-" * (spacing * 4))
+    print(f"{'File Name':<{file_name_space}} | {'Download Path':<{download_path_space}} | {'Download Time':<{download_time_space}} | {'Download URL'}")
+    print("-" * (horizontal_space * 4))
     if "Firefox" not in downloads_path:
         for entry in artifact_data[:display_selection]:
             try:
@@ -215,7 +221,7 @@ def display_downloads(artifact_data, display_selection, downloads_path):
                 download_time = str(time_conversion.convert_windows_epoch(entry[1]))
                 download_url = entry[2]
 
-                print(f"{file_name:<{spacing}} | {target_path:<{spacing}} | {download_time:<{spacing}} | {download_url}")
+                print(f"{file_name:<{file_name_space}} | {target_path:<{download_path_space}} | {download_time:<{download_time_space}} | {download_url}")
 
             except Exception as e:
                 continue
@@ -226,7 +232,7 @@ def display_downloads(artifact_data, display_selection, downloads_path):
                 target_path = entry[0]
                 download_time = str(time_conversion.convert_unix_epoch_microseconds(entry[1]))
 
-                print(f"{file_name:<{spacing}} | {target_path:<{spacing}} | {download_time:<{spacing}} | ")
+                print(f"{file_name:<{file_name_space}} | {target_path:<{download_path_space}} | {download_time:<{download_time_space}} | ")
 
             except Exception as e:
                 print(f"Error: {e}")

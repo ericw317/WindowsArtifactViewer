@@ -4,6 +4,8 @@ from CustomLibs import registry_parsing as RP
 from CustomLibs import recent_items_parsing as RI
 from CustomLibs import prefetch_parsing
 from CustomLibs import internet_parsing
+from CustomLibs import list_functions
+from CustomLibs import config
 import psutil
 import os
 
@@ -90,6 +92,18 @@ artifact_menu = True
 
 def main():
     drives = list_drives()  # load drives
+
+    # prompt time zone selection
+    timezone_list = ["America/New_York (EST/EDT)", "America/Chicago (CST/CDT)", "America/Denver (MST/MDT)",
+                     "America/Los_Angeles (PST/PDT)", "Europe/London (GMT/BST)", "Europe/Paris (CET/CEST)",
+                     "Asia/Tokyo (JST)", "Asia/Shanghai (CST)", "Australia/Sydney (AEST/AEDT)", "UTC"]
+
+    timezone_select = IV.int_between_numbers(
+        f"Select a timezone to display timestamps in: {list_functions.print_list_numbered(timezone_list)}\n",
+        1, len(timezone_list))
+
+    config.timezone = timezone_list[timezone_select - 1].split(" ")[0]
+
     while True:
         global artifact_menu
         artifact_menu = True
