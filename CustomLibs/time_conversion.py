@@ -13,9 +13,12 @@ def convert_windows_epoch(timestamp):
     epoch_start = datetime.datetime(1601, 1, 1)
     timestamp_in_seconds = timestamp / 1_000_000
     readable_time = epoch_start + datetime.timedelta(seconds=timestamp_in_seconds)
+    readable_time = readable_time.replace(microsecond=0)
     return readable_time
 
 # convert unix epoch in microseconds
 def convert_unix_epoch_microseconds(timestamp):
     epoch_start = datetime.datetime(1970, 1, 1)
-    return epoch_start + datetime.timedelta(microseconds=timestamp)
+    readable_time = epoch_start + datetime.timedelta(microseconds=timestamp)
+    readable_time = readable_time.replace(microsecond=0)
+    return readable_time
