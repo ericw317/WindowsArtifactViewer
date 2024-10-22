@@ -15,6 +15,7 @@ Current Artifacts This Will Parse:
 
 - Internet Artifacts:
 	- History
+	- Downloads
 
 - LNK Files
 - Prefetch
