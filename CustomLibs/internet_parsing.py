@@ -579,7 +579,7 @@ def main(drive):
         internet_artifacts.append("Bookmarks")
     if len(logins_paths) > 0:
         internet_artifacts.append("Logins")
-    print(bookmarks_paths)
+
     # prompt user on artifact to analyze
     artifact_selection = IV.int_between_numbers(f"\nSelect an internet artifact to analyze: {list_functions.print_list_numbered(internet_artifacts)}\n",
                                                 0, len(internet_artifacts))
