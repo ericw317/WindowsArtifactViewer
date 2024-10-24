@@ -114,25 +114,29 @@ def parse_prefetch_external(drive):
     print(f"{'File Name':<{spacing}} | {'Executable Name':<{spacing}} | {'Run Count':<{spacing}} |"
           f"{'Last Runtimes':<{spacing}}")
     print("-" * (spacing * 4))
+
     for file in prefetch_list[:display_num]:
         # load prefetch file and data
-        pf = windowsprefetch.Prefetch(file)
-        exe_name = pf.executableName
-        run_count = pf.runCount
-        last_runtimes = get_last_runtimes(pf, runtime_num)
+        try:
+            pf = windowsprefetch.Prefetch(file)
+            exe_name = pf.executableName
+            run_count = pf.runCount
+            last_runtimes = get_last_runtimes(pf, runtime_num)
 
-        print(f"{os.path.basename(file):<{spacing}} | {exe_name:<{spacing}} | {run_count:<{spacing}} | ", end="")
+            print(f"{os.path.basename(file):<{spacing}} | {exe_name:<{spacing}} | {run_count:<{spacing}} | ", end="")
 
-        for x, runtime in enumerate(last_runtimes[:runtime_num]):
-            try:
-                if x == 0:
-                    print(f"{runtime:<{spacing}}")
-                else:
-                    print(f"{' ' * ((spacing * 3) + 9)}{runtime}")
-            except IndexError:
-                continue
+            for x, runtime in enumerate(last_runtimes[:runtime_num]):
+                try:
+                    if x == 0:
+                        print(f"{runtime:<{spacing}}")
+                    else:
+                        print(f"{' ' * ((spacing * 3) + 9)}{runtime}")
+                except IndexError:
+                    continue
 
-        print("-" * (spacing * 4))
+            print("-" * (spacing * 4))
+        except Exception as e:
+            pass
 
     shutil.rmtree(temp_dir)
 

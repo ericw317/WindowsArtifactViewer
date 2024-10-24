@@ -6,6 +6,8 @@ import sqlite3
 import re
 import shutil
 import os
+import json
+import FireFoxDecrypt
 
 ##### GENERAL FUNCTIONS #####
 
@@ -20,7 +22,7 @@ def extract_username(path, external=False):
         return match.group(1)
     return None
 
-
+# check if database is empty
 def database_not_empty(file_path, table_name):
     try:
         # connect to SQLite database
@@ -37,6 +39,20 @@ def database_not_empty(file_path, table_name):
         return count > 0  # return True if greater than 0 records exist
     except sqlite3.DatabaseError:
         return False
+
+# check if JSON file is empty
+def json_not_empty(json_file):
+    with open(json_file, 'r') as file:
+        try:
+            data = json.load(file)  # load json data
+
+            # check if JSON object is empty
+            if not data:
+                return False
+            else:
+                return True
+        except json.JSONDecodeError:
+            return False
 
 # initialize history paths
 def initialize_artifact_paths(drive, artifact, firefox=False, username=""):
@@ -59,20 +75,26 @@ def initialize_artifact_paths(drive, artifact, firefox=False, username=""):
 # set spacing
 def set_spacing(artifact_data, display_selection, index, extra=False):
     longest_element = 0
-    if not extra:
-        for element in artifact_data[:display_selection]:
+    if display_selection != 0:
+        if not extra:
+            for element in artifact_data[:display_selection]:
+                if len(str(element[index])) > longest_element:
+                    longest_element = len(str(element[index]))
+        else:
+            for element in artifact_data[:display_selection]:
+                if len(str(os.path.basename(element[index]))) > longest_element:
+                    longest_element = len(str(os.path.basename(element[index])))
+    else:
+        for element in artifact_data:
             if len(str(element[index])) > longest_element:
                 longest_element = len(str(element[index]))
-    else:
-        for element in artifact_data[:display_selection]:
-            if len(str(os.path.basename(element[index]))) > longest_element:
-                longest_element = len(str(os.path.basename(element[index])))
 
     return longest_element
 
 ##### SEARCH FUNCTIONS #####
 
 # search internet SQLite files
+# history_paths = search_internet_SQL(drive, "History", "urls", "places.sqlite", "moz_places")
 def search_internet_SQL(drive, chromium_artifact, chromium_table, firefox_artifact, firefox_table):
     # initialize user list and history file locations
     user_list = AS.get_user_list(drive)
@@ -117,6 +139,106 @@ def search_internet_SQL(drive, chromium_artifact, chromium_table, firefox_artifa
                 shutil.copy(firefox_history_path, "firefox_temp\\history_temp")
                 if firefox_history_path is not None and database_not_empty("firefox_temp\\history_temp", firefox_table):
                     found_paths.append(firefox_history_path)
+                shutil.rmtree("firefox_temp")
+
+    return found_paths
+
+# search login data
+def search_logins(drive):
+    # initialize user list and login data file locations
+    user_list = AS.get_user_list(drive)
+    logins_chromium_paths = initialize_artifact_paths(drive, "Login Data")
+    found_paths = []
+
+    # change locations if mounted drive has been selected
+    if "[root]" in os.listdir(drive):
+        for key in logins_chromium_paths:
+            logins_chromium_paths[key] = logins_chromium_paths[key].replace(f"{drive}Users\\", f"{drive}[root]\\Users\\")
+
+    # search Chromium browser locations
+    if "[root]" not in os.listdir(drive):
+        for user in user_list:
+            for browser in logins_chromium_paths:
+                current_location = logins_chromium_paths[browser].replace("[user_name]", user)
+                if os.path.exists(current_location) and database_not_empty(current_location, "logins"):
+                    found_paths.append(current_location)
+    else:
+        os.mkdir("temp_history_directory")  # make temporary directory for history files
+        for user in user_list:
+            for browser in logins_chromium_paths:
+                current_location = logins_chromium_paths[browser].replace("[user_name]", user)
+                if os.path.exists(current_location):
+                    shutil.copy(current_location, "temp_history_directory\\temp_history_file")
+                    if os.path.exists(current_location) and database_not_empty(
+                            "temp_history_directory\\temp_history_file", "logins"):
+                        found_paths.append(current_location)
+                    os.remove("temp_history_directory\\temp_history_file")
+        os.rmdir("temp_history_directory")
+
+    # search firefox
+    if "[root]" not in os.listdir(drive):
+        for user in user_list:
+            firefox_logins_path = initialize_artifact_paths(drive, "logins.json", firefox=True, username=user)
+            if firefox_logins_path is not None and json_not_empty(firefox_logins_path):
+                found_paths.append(firefox_logins_path)
+    else:
+        for user in user_list:
+            firefox_logins_path = initialize_artifact_paths(drive, "logins.json", firefox=True, username=user)
+            if os.path.exists(str(firefox_logins_path)):
+                os.mkdir("firefox_temp")
+                shutil.copy(firefox_logins_path, "firefox_temp\\history_temp")
+                if firefox_logins_path is not None and json_not_empty("firefox_temp\\history_temp"):
+                    found_paths.append(firefox_logins_path)
+                shutil.rmtree("firefox_temp")
+
+    return found_paths
+
+# search bookmarks
+def search_bookmarks(drive):
+    # initialize user list and login data file locations
+    user_list = AS.get_user_list(drive)
+    bookmarks_chromium_paths = initialize_artifact_paths(drive, "Bookmarks")
+    found_paths = []
+
+    # change locations if mounted drive has been selected
+    if "[root]" in os.listdir(drive):
+        for key in bookmarks_chromium_paths:
+            bookmarks_chromium_paths[key] = bookmarks_chromium_paths[key].replace(f"{drive}Users\\",
+                                                                                  f"{drive}[root]\\Users\\")
+
+    # search Chromium browser locations
+    if "[root]" not in os.listdir(drive):
+        for user in user_list:
+            for browser in bookmarks_chromium_paths:
+                current_location = bookmarks_chromium_paths[browser].replace("[user_name]", user)
+                if os.path.exists(current_location) and json_not_empty(current_location):
+                    found_paths.append(current_location)
+    else:
+        os.mkdir("temp_history_directory")  # make temporary directory for history files
+        for user in user_list:
+            for browser in bookmarks_chromium_paths:
+                current_location = bookmarks_chromium_paths[browser].replace("[user_name]", user)
+                if os.path.exists(current_location):
+                    shutil.copy(current_location, "temp_history_directory\\temp_history_file")
+                    if os.path.exists(current_location) and json_not_empty(current_location):
+                        found_paths.append(current_location)
+                    os.remove("temp_history_directory\\temp_history_file")
+        os.rmdir("temp_history_directory")
+
+    # search firefox
+    if "[root]" not in os.listdir(drive):
+        for user in user_list:
+            firefox_logins_path = initialize_artifact_paths(drive, "places.sqlite", firefox=True, username=user)
+            if firefox_logins_path is not None and database_not_empty(firefox_logins_path, "moz_bookmarks"):
+                found_paths.append(firefox_logins_path)
+    else:
+        for user in user_list:
+            firefox_logins_path = initialize_artifact_paths(drive, "places.sqlite", firefox=True, username=user)
+            if os.path.exists(str(firefox_logins_path)):
+                os.mkdir("firefox_temp")
+                shutil.copy(firefox_logins_path, "firefox_temp\\history_temp")
+                if firefox_logins_path is not None and database_not_empty("firefox_temp\\history_temp", "moz_bookmarks"):
+                    found_paths.append(firefox_logins_path)
                 shutil.rmtree("firefox_temp")
 
     return found_paths
@@ -171,6 +293,47 @@ def collect_downloads(downloads_path, firefox=False):
 
     return downloads
 
+# collect login data
+def collect_logins(logins_path, firefox=False):
+    if not firefox:
+        # connect to sqlite3 database
+        conn = sqlite3.connect(logins_path)
+        cursor = conn.cursor()
+
+        # query login data
+        cursor.execute("SELECT origin_url, username_value FROM logins")
+
+        chromium_logins = cursor.fetchall()
+
+        return chromium_logins
+
+# collect bookmark data
+def collect_bookmarks(bookmarks_path, firefox=False):
+    if not firefox:
+        with open(bookmarks_path, 'r') as json_file:
+            data = json.load(json_file)
+
+        roots = data['roots']
+        other_bookmarks = roots['other']['children']
+        bookmarks_data = []
+
+        for bookmark in other_bookmarks:
+            bookmarks_data.append([bookmark['name'], int(bookmark['date_added']), bookmark['url']])
+
+        return bookmarks_data
+    else:
+        # connect to sqlite3 database
+        conn = sqlite3.connect(bookmarks_path)
+        cursor = conn.cursor()
+
+        # query bookmarks data
+        cursor.execute("SELECT title, dateAdded FROM moz_bookmarks")
+
+        firefox_bookmarks = cursor.fetchall()
+
+        return firefox_bookmarks
+
+
 # display history data
 def display_history(artifact_data, display_selection, history_path):
     URL_spacing = set_spacing(artifact_data, display_selection, 0)
@@ -191,11 +354,13 @@ def display_history(artifact_data, display_selection, history_path):
                 last_visit_time = str(time_conversion.convert_windows_epoch(entry[3]))
                 print(f"{title:<{title_spacing}} | {last_visit_time:<{last_visit_spacing}} | {visit_count:<{visit_count_spacing}}"
                       f" | {URL:<{URL_spacing}}")
+                print("-" * horizontal_spacing)
             else:
                 last_visit_time = str(time_conversion.convert_unix_epoch_microseconds(entry[3]))
                 print(
                     f"{title:<{title_spacing}} | {last_visit_time:<{last_visit_spacing}} | {visit_count:<{visit_count_spacing}}"
                     f" | {URL:<{URL_spacing}}")
+                print("-" * horizontal_spacing)
         except Exception as e:
             continue
 
@@ -212,7 +377,7 @@ def display_downloads(artifact_data, display_selection, downloads_path):
 
     # display downloads
     print(f"{'File Name':<{file_name_space}} | {'Download Path':<{download_path_space}} | {'Download Time':<{download_time_space}} | {'Download URL'}")
-    print("-" * (horizontal_space * 4))
+    print("-" * horizontal_space)
     if "Firefox" not in downloads_path:
         for entry in artifact_data[:display_selection]:
             try:
@@ -222,7 +387,7 @@ def display_downloads(artifact_data, display_selection, downloads_path):
                 download_url = entry[2]
 
                 print(f"{file_name:<{file_name_space}} | {target_path:<{download_path_space}} | {download_time:<{download_time_space}} | {download_url}")
-
+                print("-" * horizontal_space)
             except Exception as e:
                 continue
     else:
@@ -233,10 +398,87 @@ def display_downloads(artifact_data, display_selection, downloads_path):
                 download_time = str(time_conversion.convert_unix_epoch_microseconds(entry[1]))
 
                 print(f"{file_name:<{file_name_space}} | {target_path:<{download_path_space}} | {download_time:<{download_time_space}} | ")
-
+                print("-" * horizontal_space)
             except Exception as e:
                 print(f"Error: {e}")
                 continue
+
+# display login data
+def display_logins(artifact_data, display_selection, logins_path):
+    if "Firefox" not in logins_path:
+        url_space = set_spacing(artifact_data, display_selection, 0)
+        username_space = 8
+        horizontal_space = url_space + username_space
+
+        # display downloads
+        print(f"{'URL':<{url_space}} | {'Username':<{username_space}}")
+        print("-" * horizontal_space)
+
+        for entry in artifact_data:
+            try:
+                url = entry[0]
+                username = entry[1]
+
+                print(f"{url:<{url_space}} | {username:<{username_space}}")
+                print("-" * horizontal_space)
+            except Exception as e:
+                continue
+
+# display firefox logins
+def display_firefox_logins(firefox_logins_path):
+    # decrypt firefox login data
+    login_file = firefox_logins_path
+    key_file = login_file.replace("logins.json", "key4.db")
+    login_data = FireFoxDecrypt.DecryptLogins(login_file, key_file)
+
+    # set spacing
+    url_space = set_spacing(login_data, 0, "hostname")
+    username_space = set_spacing(login_data, 0, "username")
+    if username_space < 8:
+        username_space = 8
+    password_space = 16
+    horizontal_space = url_space + username_space + password_space
+
+    # display login data
+    print(f"{'URL':<{url_space}} | {'Username':<{username_space}} | {'Password':<{password_space}}")
+    print("-" * horizontal_space)
+    for entry in login_data:
+        print(f"{entry['hostname']:<{url_space}} | {entry['username']:<{username_space}} | {entry['password']:<{password_space}}")
+        print("-" * horizontal_space)
+
+# display bookmarks
+def display_bookmarks(artifact_data, display_selection, bookmarks_path):
+    if "Firefox" not in bookmarks_path:
+        # set spacing
+        name_space = set_spacing(artifact_data, display_selection, 0)
+        date_space = 25
+        url_space = set_spacing(artifact_data, display_selection, 2)
+        horizontal_space = name_space + date_space + url_space
+
+        # display bookmarks
+        print(f"{'Bookmark':<{name_space}} | {'Date Added':<{date_space}} | {'URL':<{url_space}}")
+        print("-" * horizontal_space)
+        for bookmark in artifact_data:
+            name = bookmark[0]
+            date = str(time_conversion.convert_windows_epoch(bookmark[1]))
+            url = bookmark[2]
+            print(f"{name:<{name_space}} | {date:<{date_space}} | {url:<{url_space}}")
+            print("-" * horizontal_space)
+    else:
+        # set spacing
+        name_space = set_spacing(artifact_data, display_selection, 0)
+        date_space = 25
+        horizontal_space = name_space + date_space
+
+        # display bookmarks
+        print(f"{'Bookmark':<{name_space}} | {'Date Added':<{date_space}}")
+        print("-" * horizontal_space)
+        for bookmark in artifact_data:
+            name = bookmark[0]
+            date = str(time_conversion.convert_unix_epoch_microseconds(bookmark[1]))
+            print(f"{name:<{name_space}} | {date:<{date_space}}")
+            print("-" * horizontal_space)
+
 
 # artifact parsing
 def parse_artifact(artifact_files, collection_func, artifact_type, external=False):
@@ -279,6 +521,14 @@ def parse_artifact(artifact_files, collection_func, artifact_type, external=Fals
             artifact_path = element
             break
 
+    # switch to login parsing in the case of firefox login data
+    if "Firefox" in artifact_path and artifact_type == "logins":
+        try:
+            display_firefox_logins(artifact_path)
+        except Exception as e:
+            print(f"Couldn't decrypt Firefox logins: {e}")
+        return 0
+
     # parse history
     if "Firefox" not in artifact_path:
         if not external:
@@ -298,19 +548,26 @@ def parse_artifact(artifact_files, collection_func, artifact_type, external=Fals
             shutil.rmtree("temp_dir")
 
     # prompt user on how many entries to display
-    display_selection = IV.int_between_numbers("How many entries would you like to display?\n",
-                                               1, len(artifact_data))
+    if artifact_type != "logins" and artifact_type != "bookmarks":
+        display_selection = IV.int_between_numbers("How many entries would you like to display?\n",
+                                                   1, len(artifact_data))
 
     if artifact_type == "history":
         display_history(artifact_data, display_selection, artifact_path)
     elif artifact_type == "downloads":
         display_downloads(artifact_data, display_selection, artifact_path)
+    elif artifact_type == "logins":
+        display_logins(artifact_data, 0, artifact_path)
+    elif artifact_type == "bookmarks":
+        display_bookmarks(artifact_data, 0, artifact_path)
 
 # main function
 def main(drive):
     # initialize artifacts and locations
     history_paths = search_internet_SQL(drive, "History", "urls", "places.sqlite", "moz_places")
     downloads_paths = search_internet_SQL(drive, "History", "downloads", "places.sqlite", "moz_annos")
+    logins_paths = search_logins(drive)
+    bookmarks_paths = search_bookmarks(drive)
     internet_artifacts = []
 
     # check for history
@@ -318,7 +575,11 @@ def main(drive):
         internet_artifacts.append("History")
     if len(downloads_paths) > 0:
         internet_artifacts.append("Downloads")
-
+    if len(bookmarks_paths) > 0:
+        internet_artifacts.append("Bookmarks")
+    if len(logins_paths) > 0:
+        internet_artifacts.append("Logins")
+    print(bookmarks_paths)
     # prompt user on artifact to analyze
     artifact_selection = IV.int_between_numbers(f"\nSelect an internet artifact to analyze: {list_functions.print_list_numbered(internet_artifacts)}\n",
                                                 0, len(internet_artifacts))
@@ -334,3 +595,13 @@ def main(drive):
             parse_artifact(downloads_paths, collect_downloads, "downloads")
         else:
             parse_artifact(downloads_paths, collect_downloads, "downloads", external=True)
+    elif artifact_selection == "Bookmarks":
+        if drive == "C:\\":
+            parse_artifact(bookmarks_paths, collect_bookmarks, "bookmarks")
+        else:
+            parse_artifact(bookmarks_paths, collect_bookmarks, "bookmarks", external=True)
+    elif artifact_selection == "Logins":
+        if drive == "C:\\":
+            parse_artifact(logins_paths, collect_logins, "logins")
+        else:
+            parse_artifact(logins_paths, collect_logins, "logins", external=True)
