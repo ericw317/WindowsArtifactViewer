@@ -26,4 +26,4 @@ Current Artifacts This Will Parse:
 
 More features coming soon.
 
-If you prefer a direct executable download, it's available here: https://sourceforge.net/projects/windowsartifactviewer/
+If you prefer a direct executable download, it's available here: https://sourceforge.net/projects/windows-artifact-viewer/
