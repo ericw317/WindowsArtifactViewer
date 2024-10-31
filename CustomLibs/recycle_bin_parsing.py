@@ -3,13 +3,10 @@ import sys
 import shutil
 import subprocess
 from Registry import Registry
-sys.path.append(os.path.abspath("CustomLibs"))  # needed for nested import
-from RegistryFunctions import SAM_functions as SAM
 from CustomLibs import InputValidation as IV
 from CustomLibs import artifact_search as AS
 from CustomLibs import time_conversion as TC
 import struct
-import datetime
 
 # copy SAM hive
 def copy_sam(drive):
@@ -30,6 +27,13 @@ def copy_sam(drive):
         except PermissionError as e:
             print("Error: Make sure you're running as administrator.")
 
+def get_SAM_RID(reg, user):
+    # navigate to path of user and open the user key
+    path = rf"SAM\Domains\Account\Users\Names\{user}"
+    key = reg.open(path)
+    RID = key.value("").value_type()  # obtain RID value
+    return RID
+
 # get RIDs
 def get_RIDs(drive):
     # make a copy of the SAM file and load it up
@@ -46,7 +50,7 @@ def get_RIDs(drive):
 
     # loop through each user and create a dictionary with their data
     for key in key.subkeys():
-        RID = SAM.get_RID(reg, key.name())
+        RID = get_SAM_RID(reg, key.name())
         user_dict = {"Username": key.name(),
                      "RID": RID,
                      }
