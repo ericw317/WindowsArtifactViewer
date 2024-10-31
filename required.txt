@@ -2,3 +2,4 @@ pip install python-registry
 pip install psutil
 pip install windowsprefetch
 pip install FirefoxDecrypt
+pip install python-evtx

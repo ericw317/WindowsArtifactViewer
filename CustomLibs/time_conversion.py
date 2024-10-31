@@ -8,6 +8,7 @@ def filetime_convert(filetime):
     seconds = filetime / 10**7  # convert FILETIME to seconds
     filetime_epoch = datetime.datetime(1601, 1, 1, tzinfo=datetime.timezone.utc)  # define epoch
     readable_time = filetime_epoch + datetime.timedelta(seconds=seconds)  # add seconds to epoch
+    readable_time = readable_time.replace(microsecond=0)
 
     if config.timezone != "UTC":
         local_time = readable_time.astimezone(ZoneInfo(config.timezone))

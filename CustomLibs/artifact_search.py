@@ -91,3 +91,13 @@ def search_internet(drive):
                 return True
 
     return False
+
+# search for $Recycle.Bin contents
+def search_recycle_bin(drive):
+    recycle_path = set_path("$Recycle.Bin", drive)
+    if os.path.exists(recycle_path):
+        for folder in os.listdir(recycle_path):
+            for file in os.listdir(os.path.join(recycle_path, folder)):
+                if file.startswith("$I"):
+                    return True
+    return False

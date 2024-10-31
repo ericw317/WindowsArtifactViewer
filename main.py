@@ -5,6 +5,7 @@ from CustomLibs import recent_items_parsing as RI
 from CustomLibs import prefetch_parsing
 from CustomLibs import internet_parsing
 from CustomLibs import list_functions
+from CustomLibs import recycle_bin_parsing
 from CustomLibs import config
 import psutil
 import os
@@ -52,6 +53,10 @@ def artifact_search_device(drive):
     if AS.search_internet(drive):
         artifact_list.append("Internet Artifacts")
 
+    # search $Recycle.Bin
+    if AS.search_recycle_bin(drive):
+        artifact_list.append("$Recycle.Bin")
+
     # output found artifacts
     print("\nArtifacts Found:\n----------------")
     for index, artifact in enumerate(artifact_list):
@@ -86,6 +91,8 @@ def artifact_selection(artifact_list, drive):
             internet_parsing.main(drive)
         else:
             internet_parsing.main(drive)
+    elif selected_artifact == "$Recycle.Bin":
+        recycle_bin_parsing.parse_recycle_bin(drive)
 
 
 artifact_menu = True

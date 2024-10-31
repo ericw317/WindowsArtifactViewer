@@ -341,6 +341,8 @@ def display_history(artifact_data, display_selection, history_path):
     visit_count_spacing = 11
     last_visit_spacing = 25
     horizontal_spacing = URL_spacing + title_spacing + (last_visit_spacing * 2)
+    if horizontal_spacing > 150:
+        horizontal_spacing = 150
 
     # display history entries
     print(f"{'Title':<{title_spacing}} | {'Last Visit':<{last_visit_spacing}} | {'Visit Count':<{visit_count_spacing}} | {'URL':<{URL_spacing}}")
@@ -372,6 +374,8 @@ def display_downloads(artifact_data, display_selection, downloads_path):
     if "Firefox" not in downloads_path:
         download_url_space = set_spacing(artifact_data, display_selection, 2)
         horizontal_space = file_name_space + download_path_space + download_time_space + download_url_space
+        if horizontal_space > 150:
+            horizontal_space = 150
     else:
         horizontal_space = file_name_space + download_path_space + download_time_space
 
