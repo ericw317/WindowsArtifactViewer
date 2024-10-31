@@ -21,6 +21,7 @@ Current Artifacts This Will Parse:
 
 - LNK Files
 - Prefetch
+- $Recycle.Bin
 
 	
 
