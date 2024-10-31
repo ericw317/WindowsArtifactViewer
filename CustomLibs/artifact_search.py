@@ -71,33 +71,39 @@ def search_prefetch(drive):
 
 def search_internet(drive):
     # initialize user list and internet locations
-    user_list = get_user_list(drive)
-    internet_locations = {
-        "chrome": f"{drive}Users\\[user_name]\\AppData\\Local\\Google\\Chrome",
-        "edge": f"{drive}Users\\[user_name]\\AppData\\Local\\Microsoft\\Edge",
-        "brave": f"{drive}Users\\[user_name]\\AppData\\Local\\BraveSoftware\\Brave-Browser",
-        "firefox": f"{drive}Users\\[user_name]\\AppData\\Roaming\\Mozilla\\Firefox"
-    }
+    try:
+        user_list = get_user_list(drive)
+        internet_locations = {
+            "chrome": f"{drive}Users\\[user_name]\\AppData\\Local\\Google\\Chrome",
+            "edge": f"{drive}Users\\[user_name]\\AppData\\Local\\Microsoft\\Edge",
+            "brave": f"{drive}Users\\[user_name]\\AppData\\Local\\BraveSoftware\\Brave-Browser",
+            "firefox": f"{drive}Users\\[user_name]\\AppData\\Roaming\\Mozilla\\Firefox"
+        }
 
-    # change locations if mounted drive has been selected
-    if "[root]" in os.listdir(drive):
-        for key in internet_locations:
-            internet_locations[key] = internet_locations[key].replace(f"{drive}Users\\", f"{drive}[root]\\Users\\")
+        # change locations if mounted drive has been selected
+        if "[root]" in os.listdir(drive):
+            for key in internet_locations:
+                internet_locations[key] = internet_locations[key].replace(f"{drive}Users\\", f"{drive}[root]\\Users\\")
 
-    for user in user_list:
-        for location in internet_locations:
-            current_location = internet_locations[location].replace("[user_name]", user)
-            if os.path.exists(current_location):
-                return True
+        for user in user_list:
+            for location in internet_locations:
+                current_location = internet_locations[location].replace("[user_name]", user)
+                if os.path.exists(current_location):
+                    return True
 
-    return False
+        return False
+    except Exception:
+        return False
 
 # search for $Recycle.Bin contents
 def search_recycle_bin(drive):
-    recycle_path = set_path("$Recycle.Bin", drive)
-    if os.path.exists(recycle_path):
-        for folder in os.listdir(recycle_path):
-            for file in os.listdir(os.path.join(recycle_path, folder)):
-                if file.startswith("$I"):
-                    return True
-    return False
+    try:
+        recycle_path = set_path("$Recycle.Bin", drive)
+        if os.path.exists(recycle_path):
+            for folder in os.listdir(recycle_path):
+                for file in os.listdir(os.path.join(recycle_path, folder)):
+                    if file.startswith("$I"):
+                        return True
+        return False
+    except Exception:
+        return False

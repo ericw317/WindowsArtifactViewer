@@ -67,7 +67,10 @@ def artifact_search_device(drive):
 # artifact selection function
 def artifact_selection(artifact_list, drive):
     selection = IV.int_between_numbers("Select an artifact: ", 0, len(artifact_list))  # prompt selection
-    selected_artifact = artifact_list[selection - 1]  # set selected artifact
+    try:
+        selected_artifact = artifact_list[selection - 1]  # set selected artifact
+    except IndexError:
+        selection = 0
 
     if selection == 0:
         global artifact_menu
